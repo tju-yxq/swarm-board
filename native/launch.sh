@@ -7,4 +7,4 @@ if [ ! -x "$binary" ]; then
   exit 1
 fi
 export CODEX_SWARM_RUNNER="$here/../skills/swarm/codex/run.mjs"
-exec "$binary" "$@"
+exec "$binary" --no-daemon "$@"

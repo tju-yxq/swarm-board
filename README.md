@@ -36,7 +36,7 @@ terminal. Node receives the task as a separate argument.
 ```
 
 The build defaults to the upstream `rust-v0.171.0-alpha.13.2` tag. The launcher
-uses the locally built executable and sets `CODEX_SWARM_RUNNER` to the runner in
+uses the locally built executable with `--no-daemon` and sets `CODEX_SWARM_RUNNER` to the runner in
 this checkout. Use a dedicated source checkout: the build applies the patch and
 synchronizes the workspace package versions in Cargo.lock.
 
