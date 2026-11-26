@@ -40,6 +40,8 @@ mkdir -p "$build"
 (
   cd "$checkout/codex-rs"
   export CARGO_TARGET_DIR="$build/target"
+  # Release tags can stamp workspace versions without regenerating Cargo.lock.
+  cargo update --workspace
   cargo build --locked --profile dev-small -p codex-cli --bin codex
 )
 install -m 755 "$build/target/dev-small/codex" "$build/codex"
