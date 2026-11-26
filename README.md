@@ -9,6 +9,11 @@ The current Codex runner supports **read-only investigation and review**. It use
 Codex App Server to start and control independent sessions and serves the board
 on `127.0.0.1`.
 
+![Codex Swarm Board demo showing two workers investigating in parallel and an independent verifier posting the final result](docs/screenshots/codex-swarm-demo.gif)
+
+*Time-compressed replay of a real Codex run. Two workers review Python edge
+cases, report concrete examples, and an independent verifier checks both.*
+
 ## Choose an entry point
 
 | Where | Entry point | Status |
