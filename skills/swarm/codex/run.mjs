@@ -336,6 +336,7 @@ if (values.help) {
     clearTimeout(timer);
     clearTimeout(swarm.shutdownTimer);
     swarm.state();
+    console.log('SWARM_RUN_STATUS=' + swarm.status);
     swarm.codex?.close();
     if (swarm.board?.connected) swarm.board.disconnect();
     swarm.board?.unref();

@@ -23,6 +23,34 @@ select it. For a project-local installation, copy the entire `skills/swarm`
 directory to `.agents/skills/swarm` in the target workspace. The `/swarm` command
 below is the upstream Claude Code entry point.
 
+## Native /swarm for Codex CLI
+
+The adapter in [native/codex-swarm.patch](native/codex-swarm.patch) adds an
+interactive `/swarm <read-only task>` command to the upstream Codex TUI. It
+starts the same local runner as the skill and prints the board URL in the
+terminal. Node receives the task as a separate argument.
+
+```sh
+./native/build.sh
+./native/launch.sh --cd /path/to/project
+```
+
+The build defaults to the upstream `rust-v0.171.0-alpha.13.2` tag. The launcher
+uses the locally built executable and sets `CODEX_SWARM_RUNNER` to the runner in
+this checkout.
+
+For a Codex upgrade, use a separate checkout of the target release:
+
+```sh
+./native/build.sh --check /path/to/new-codex-checkout
+./native/build.sh /path/to/new-codex-checkout
+```
+
+The check performs no source edits. If it reports a conflict, refresh the
+patch against the target release's command registry and dispatcher, then
+build and test /swarm in the CLI. The board and runner are maintained in this
+repository.
+
 ## Upstream Claude Code workflow
 
 **One command turns your Claude Code session into a judge orchestrating waves of parallel
