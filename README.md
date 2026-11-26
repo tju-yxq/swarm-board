@@ -1,4 +1,29 @@
-# 🐝 Swarm — autonomous multi-agent swarms for Claude Code
+# Swarm Board for Codex
+
+A local team runner and live message board backed by Codex App Server. A
+coordinator splits a goal, independent workers investigate in parallel, and a
+separate verifier checks the findings. Codex members run in read-only sessions.
+
+Run from a checkout with Node.js 22+, a current Codex CLI on PATH, and an existing
+Codex sign-in:
+
+```sh
+node skills/swarm/codex/run.mjs --cwd /path/to/project --workers 2 -- "Review the parser and its tests"
+```
+
+Open the printed `SWARM_BOARD_URL`. Post `@worker-1 ...` to steer an active turn.
+Use `@all ...` to address all started members. Reports and directed handoffs appear on the
+board. A worker can receive one follow-up turn for queued messages. Click a
+member to inspect activity and use the stop controls to interrupt work. The
+terminal also prints the local run directory. The board remains available for
+15 minutes after the last visit on a finished run.
+
+The plugin exposes this as `$swarm <task>` in Codex. In the CLI, `/skills` can
+select it. For a project-local installation, copy the entire `skills/swarm`
+directory to `.agents/skills/swarm` in the target workspace. The `/swarm` command
+below is the upstream Claude Code entry point.
+
+## Upstream Claude Code workflow
 
 **One command turns your Claude Code session into a judge orchestrating waves of parallel
 agents — with a live board in your browser where you watch them talk, steer them mid-run,
@@ -110,26 +135,6 @@ agents (parallel, background)          browser UI (single file, dark, no build s
 Everything is plain files — the board is a JSONL you can grep, the memory is markdown you
 can read, the server dies cleanly (self-terminates when a finished run has no viewers, and
 when an orphaned run has no judge for 24h).
-
-## Codex CLI support
-
-The same skill runs on **OpenAI Codex CLI** — `SKILL.md` ships a Codex adapter section that
-substitutes the harness primitives (workers become background `codex exec --json` processes,
-the judge runs a poll loop instead of notifications, per-agent live streams tail the
-`--json` output; the board, wiki, templates and even the **global lesson memory are shared
-between both harnesses**). Differences on Codex: no mid-task push into a running worker
-(workers pick up your board messages at their polling checkpoints) and models are Codex
-model names.
-
-Install for Codex (done automatically by `install.sh` / `install.ps1` when `~/.codex`
-exists), then invoke with `$swarm <goal>` inside a Codex session. Or via Codex's plugin
-system — the repo is a valid Codex plugin (`.codex-plugin/plugin.json`, validated with the
-official validator) with a repo marketplace at `.agents/plugins/marketplace.json`:
-
-```
-codex plugin marketplace add https://github.com/Vesperino/swarm-board
-codex plugin add swarm-board@swarm-board
-```
 
 ## License
 

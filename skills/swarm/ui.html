@@ -418,26 +418,26 @@ function setState(s) {
   stEl.textContent = s.status || '?';
   stEl.className = 'pill';
   stEl.classList.add(s.status || 'unknown');
-  lastActive = s.active || [];
+  lastActive = s.members || s.active || [];
   lastJudge = s.judge || null;
-  $('agentCount').textContent = lastActive.length + ' live';
+  $('agentCount').textContent = (s.active || []).length + ' live';
   const judgeCard = lastJudge && lastJudge.transcript ?
     `<div class="agent" data-id="judge" data-role="judge" title="click → live view">` +
     `<div class="arow"><b style="color:var(--judge)">judge</b> <span class="role">orchestrator</span>` +
     (lastJudge.model ? `<span class="model">${esc(lastJudge.model)}</span>` : '') + `</div>` +
     `<div class="trow"><span class="task">plans waves · reads results · gates success</span>` +
-    `<span class="live">live ↗</span></div>` +
+    `<span class="live">${esc(lastJudge.status || 'live')} ↗</span></div>` +
     `<span class="lastl">${esc(lastMsg['judge'] || '')}</span></div>` : '';
   $('agents').innerHTML = judgeCard + (lastActive.map(a =>
     `<div class="agent" data-id="${esc(a.id)}" data-role="${esc(a.role)}" title="click → live view">` +
     `<div class="arow"><b>${esc(a.id)}</b> <span class="role">${esc(a.role)}</span>` +
     (a.model ? `<span class="model">${esc(a.model)}</span>` : '') +
     `<span class="abtn" data-act="correct" data-aid="${esc(a.id)}" title="correct this agent (prefills @${esc(a.id)})">✎</span>` +
-    `<span class="abtn stop" data-act="agentstop" data-aid="${esc(a.id)}" title="stop this agent">■</span></div>` +
-    `<div class="trow"><span class="task" title="${esc(a.task)}">${esc(a.task)}</span><span class="live">live ↗</span></div>` +
+    (!a.status || a.status === 'working' ? `<span class="abtn stop" data-act="agentstop" data-aid="${esc(a.id)}" title="stop this agent">■</span>` : '') + '</div>' +
+    `<div class="trow"><span class="task" title="${esc(a.task)}">${esc(a.task)}</span><span class="live">${esc(a.status || 'live')} ↗</span></div>` +
     `<span class="lastl">${esc(lastMsg[a.id] || '')}</span></div>`
   ).join('') || (judgeCard ? '' : '<div class="agent none">No active agents.<br><span style="color:var(--dim)">The judge spawns workers each round.</span></div>'));
-  const done = ['done', 'stopped', 'failed', 'accepted'].includes(s.status);
+  const done = ['done', 'stopped', 'failed', 'accepted', 'partial'].includes(s.status);
   $('stopBtn').disabled = done; $('acceptBtn').disabled = done;
   loadTree();
 }

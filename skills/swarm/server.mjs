@@ -168,7 +168,7 @@ function scanUsage() {
       const sub = path.join(path.dirname(jt), 'subagents');
       for (const f of listFiles(sub)) if (f.endsWith('.jsonl')) files.add(path.join(sub, f));
     }
-    for (const a of st.active || []) {
+    for (const a of st.members || st.active || []) {
       if (a.transcript && fs.existsSync(a.transcript)) files.add(path.resolve(a.transcript));
     }
     for (const file of files) {
@@ -186,7 +186,8 @@ function scanUsage() {
       for (const line of text.slice(0, lastNl).split('\n')) {
         if (!line.includes('"usage"')) continue;
         try {
-          const u = JSON.parse(line).message && JSON.parse(line).message.usage;
+          const event = JSON.parse(line);
+          const u = event.message?.usage ?? event.usage;
           if (u) {
             usageTotals.in += (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0);
             usageTotals.out += u.output_tokens || 0;
@@ -217,7 +218,7 @@ function listFiles(base, prefix = '') {
 // No-zombie policy: once the run reaches a terminal status, shut down after
 // IDLE_EXIT_MIN minutes with no HTTP activity and no open SSE viewers.
 let lastRequest = Date.now();
-const TERMINAL = ['done', 'stopped', 'accepted', 'failed'];
+const TERMINAL = ['done', 'stopped', 'accepted', 'failed', 'partial'];
 setInterval(() => {
   try {
     if (clients.size > 0) return;
@@ -241,8 +242,16 @@ setInterval(() => {
 const server = createServer(async (req, res) => {
   lastRequest = Date.now();
   const url = new URL(req.url, 'http://localhost');
-  const p = decodeURIComponent(url.pathname);
   try {
+    const p = decodeURIComponent(url.pathname);
+    if (process.send && req.headers.host !== '127.0.0.1:' + server.address().port) {
+      return json(res, 403, { ok: false, error: 'The board is only available at its loopback URL' });
+    }
+    if (process.send && req.method === 'POST' &&
+        (req.headers['sec-fetch-site'] === 'cross-site' ||
+         (req.headers.origin && req.headers.origin !== 'http://127.0.0.1:' + server.address().port))) {
+      return json(res, 403, { ok: false, error: 'Cross-origin board control is forbidden' });
+    }
     if (req.method === 'GET' && p === '/') {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(fs.readFileSync(path.join(HERE, 'ui.html')));
@@ -278,6 +287,9 @@ const server = createServer(async (req, res) => {
         text: String(body.text),
         refs: Array.isArray(body.refs) ? body.refs.map(String) : [],
       });
+      if (body.from === 'HUMAN' && body.role === 'human') {
+        process.connected && process.send({ type: 'human', text: String(body.text) });
+      }
       json(res, 200, { ok: true, seq: s });
     } else if (req.method === 'POST' && p === '/control') {
       let body;
@@ -289,6 +301,7 @@ const server = createServer(async (req, res) => {
         fs.writeFileSync(path.join(CONTROL, 'agent-stop-' + id + '.flag'), new Date().toISOString());
         postLine({ from: 'HUMAN', role: 'human', type: 'system',
           text: 'HUMAN requested STOP for @' + id, refs: [] });
+        process.connected && process.send({ type: 'control', action: body.action, id });
         return json(res, 200, { ok: true });
       }
       if (!['stop', 'accept'].includes(body.action)) {
@@ -297,6 +310,7 @@ const server = createServer(async (req, res) => {
       fs.writeFileSync(path.join(CONTROL, body.action + '.flag'), new Date().toISOString());
       postLine({ from: 'HUMAN', role: 'human', type: 'system',
         text: 'HUMAN pressed ' + body.action.toUpperCase(), refs: [] });
+      process.connected && process.send({ type: 'control', action: body.action });
       json(res, 200, { ok: true });
     } else if (req.method === 'GET' && p === '/usage') {
       scanUsage();
@@ -331,7 +345,7 @@ const server = createServer(async (req, res) => {
         const st = JSON.parse(fs.readFileSync(STATE, 'utf8'));
         entry = id === 'judge'
           ? (st.judge && st.judge.transcript ? { transcript: st.judge.transcript } : null)
-          : (st.active || []).find(a => a.id === id);
+          : (st.members || st.active || []).find(a => a.id === id);
       } catch {}
       if (!entry || !entry.transcript) {
         return json(res, 404, { ok: false, error: 'no live transcript for ' + id });
@@ -393,7 +407,9 @@ function listen(port, tries) {
     const actual = server.address().port;
     fs.writeFileSync(path.join(RUN_DIR, 'server.json'),
       JSON.stringify({ port: actual, pid: process.pid, startedAt: new Date().toISOString() }));
-    console.log('SWARM_BOARD_URL=http://127.0.0.1:' + actual);
+    const url = 'http://127.0.0.1:' + actual;
+    process.connected && process.send({ type: 'ready', url });
+    console.log('SWARM_BOARD_URL=' + url);
   });
 }
 listen(BASE_PORT, 20);
