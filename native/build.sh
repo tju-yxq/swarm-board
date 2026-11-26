@@ -40,6 +40,8 @@ mkdir -p "$build"
 (
   cd "$checkout/codex-rs"
   export CARGO_TARGET_DIR="$build/target"
+  . "$here/prepare-v8.sh"
+  prepare_codex_v8 "$checkout" "$build"
   # Release tags can stamp workspace versions without regenerating Cargo.lock.
   cargo update --workspace
   cargo build --locked --profile dev-small -p codex-cli --bin codex
